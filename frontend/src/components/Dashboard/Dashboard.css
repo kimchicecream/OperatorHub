@@ -1,0 +1,120 @@
+.machine-dashboard {
+    /* border: 4px solid red; */
+    width: 100%;
+    height: 100%;
+    /* z-index: 10000; */
+    color: black;
+
+    padding: 30px;
+}
+
+.machine-dashboard .total-stats {
+    /* border: 1px solid red; */
+
+    display: flex;
+    gap: 30px;
+}
+
+.machine-dashboard .title h1 {
+    /* border: 1px solid red; */
+    margin-bottom: 30px;
+}
+
+.machine-dashboard .total-stats .container {
+    /* border: 1px solid red; */
+    width: 270px;
+    height: 150px;
+    background-color: rgb(235, 235, 235);
+    border-radius: 20px;
+    box-shadow: 1px 6px 13px -5px rgba(0, 0, 0, 0.227);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* border: 1px solid red; */
+
+    padding: 0 10px;
+}
+
+.machine-dashboard .total-stats .container .total-orders {
+    font-size: 80px;
+    /* border: 1px solid red; */
+}
+
+.machine-dashboard .total-stats .container .info {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+    position: relative;
+    /* border: 1px solid red; */
+}
+
+.machine-dashboard .total-stats .container .info i {
+    position: relative;
+    color: rgb(255, 111, 0);
+    cursor: pointer;
+
+    transition: 0.4s ease;
+}
+
+.machine-dashboard .total-stats .container .info i:hover {
+    color: rgb(255, 167, 100);
+    /* text-shadow: 0px 0px 14px rgba(255, 111, 0, 0.75); */
+}
+
+/* ----------------------------------- */
+/* ------   NAV BAR TOOL TIP   ------- */
+/* ----------------------------------- */
+.machine-dashboard .info .tooltip {
+    position: absolute;
+    top: 30px;
+    left: 231.5px;
+    transform: translateX(-50%);
+    background-color: rgb(54, 54, 54);
+    color: white;
+    font-size: 14px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.machine-dashboard .info i:hover + .tooltip {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.machine-dashboard .info .tooltip::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent rgb(54, 54, 54) transparent;
+}
+
+/* ----------------------------------- */
+/* -------   PULSING LOADER   -------- */
+/* ----------------------------------- */
+.rectangle-loader {
+    width: 100%;
+    height: 85.5px;
+    background-color: #94a3b85e;
+    border-radius: 18px;
+    animation: pulse 1.5s infinite;
+
+    margin-bottom: 10px;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
