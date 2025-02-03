@@ -80,7 +80,6 @@ function Machines() {
         }
     }
 
-
     function determineNoteEnvStatus(extractedData) {
         for (const group of extractedData) {
             if (group.pdfFile.endsWith('_envelope.pdf')) return 'Envelope';

@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 5001; // change for new machines
 
 const allowedOrigins = [
-    'http://localhost:3000',
+    'http://localhost:5173',
     'https://alexharimgo.com'
 ];
 
@@ -173,6 +173,19 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
+// close gracefully
+process.on('exit', async () => {
+    if (browser) {
+        await browser.close();
+    }
+});
+
+process.on('SIGINT', async () => {
+    if (browser) {
+        await browser.close();
+    }
+    process.exit();
+});
 
 // prevent backend crashes
 process.on('uncaughtException', (err) => {

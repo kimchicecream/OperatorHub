@@ -4,25 +4,25 @@
     margin: 0;
     border: 0;
     box-sizing: border-box;
-  }
+}
 
-  html, body {
+html, body {
     background-color: #111111;
     /* background-color: white; */
     color: rgb(255, 255, 255);
-  }
+}
 
-  @font-face {
+@font-face {
     font-family: 'SF Pro';
-    src: url('../public/font/SFPRODISPLAYREGULAR.OTF') format('truetype');
+    src: url('/fonts/SFPRODISPLAYREGULAR.OTF') format('opentype');
     font-weight: normal;
-  }
+}
 
-  @font-face {
+@font-face {
     font-family: 'SF Pro';
-    src: url('../public/font/SFPRODISPLAYBOLD.OTF') format('truetype');
+    src: url('/fonts/SFPRODISPLAYBOLD.OTF') format('opentype');
     font-weight: bold;
-  }
+}
 /* ------- */
 
 .machine-demo-page {
