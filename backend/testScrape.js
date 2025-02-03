@@ -11,7 +11,6 @@ puppeteer.use(StealthPlugin());
     });
     const page = await browser.newPage();
 
-    // Optionally, set your normal Chrome user agent
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36');
 
     console.log('Navigating to http://192.168.0.95/jobs');
