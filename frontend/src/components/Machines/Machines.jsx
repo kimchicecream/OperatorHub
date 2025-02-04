@@ -29,7 +29,7 @@ function Machines() {
             const response = await fetch(`http://localhost:5001/api/scrape-jobs?machine=${machine}`);
             const data = await response.json();
 
-            // Ensure extractedData exists and is an array before using reduce
+            // ensure extractedData exists and is an array before using reduce
             const extractedData = Array.isArray(data.extractedData) ? data.extractedData : [];
 
             const totalPages = extractedData.reduce((sum, group) => sum + group.dataRows.length, 0);
