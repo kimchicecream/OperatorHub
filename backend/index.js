@@ -1,6 +1,12 @@
+// import fetch from 'node-fetch';
+
 const express = require('express');
 const puppeteer = require('puppeteer');
 const cors = require('cors');
+const axios = require('axios');
+const http = require('http');
+const net = require('net');
+// const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 5001; // change for new machines
@@ -98,76 +104,137 @@ app.get('/api/scrape-performance', async (req, res) => {
 let jobCache = {};
 let jobLastFetched = {};
 
-// SCRAPE 192.168.0.91/jobs
+// Define the keys to extract
+const keysToExtract = [
+    'card_id',
+    'card_or_envelope',
+    'copies_left',
+    'filename',
+    'jobid',
+    'order_id',
+    'pen_life',
+    'status'
+];
+
+// fetch machine status from 192.168.0.<machine>/machine_status
+const agent = new http.Agent({
+    createConnection: (options, callback) => {
+      options.localAddress = '192.168.2.118';
+      return net.createConnection(options, callback);
+    }
+  });
+
 app.get('/api/scrape-jobs', async (req, res) => {
     const machine = req.query.machine;
 
     if (!machine || isNaN(machine) || machine < 71 || machine > 110) {
-        return res.status(400).json({ error: 'Invalid machine number (71-110).' });
+      return res
+        .status(400)
+        .json({ error: 'Invalid machine number (71-110).' });
     }
 
-    // check if cache exists and is less than 1 min old
     const now = Date.now();
     if (jobCache[machine] && now - jobLastFetched[machine] < 1 * 60 * 1000) {
-        return res.json({ extractedData: jobCache[machine] });
+      return res.json({ extractedData: jobCache[machine] });
     }
+
+    const machineStatusUrl = `http://192.168.0.${machine}/machine_status`;
 
     try {
-        const browser = await getBrowserInstance(); // reuse the existing browser instance
-        const page = await browser.newPage();
+      const response = await axios.get(machineStatusUrl, {
+        httpAgent: agent // Use the custom HTTP agent here
+        // Optionally, add a timeout if needed:
+        // timeout: 5000,
+      });
+      const jsonData = response.data;
 
-        await page.setViewport({ width: 800, height: 600 });
-        await page.setRequestInterception(true);
-        page.on('request', (req) => {
-            if (['image', 'stylesheet', 'font'].includes(req.resourceType())) {
-                req.abort();
-            } else {
-                req.continue();
-            }
-        });
+      const extractedData = {};
+      keysToExtract.forEach(key => {
+        if (jsonData.hasOwnProperty(key)) {
+          extractedData[key] = jsonData[key];
+        }
+      });
 
-        const jobPageUrl = `http://192.168.0.${machine}/jobs`;
-        await page.goto(jobPageUrl, { waitUntil: 'domcontentloaded', timeout: 40000 });
-        await page.waitForSelector('tbody tr', { timeout: 15000 });
+      jobCache[machine] = extractedData;
+      jobLastFetched[machine] = Date.now();
 
-        const extractedData = await page.evaluate(() => {
-            const rows = Array.from(document.querySelectorAll('tbody tr'));
-            let groupedData = [];
-            let currentGroup = null;
-
-            rows.forEach((row) => {
-                const cells = Array.from(row.querySelectorAll('td'));
-                const rowData = cells.map(td => td.textContent.trim());
-
-                const hasPdf = cells.some(td => {
-                    const strong = td.querySelector('strong');
-                    return strong && strong.textContent.trim().endsWith('.pdf');
-                });
-
-                if (hasPdf) {
-                    if (currentGroup) groupedData.push(currentGroup);
-                    currentGroup = { pdfFile: rowData[0], dataRows: [] };
-                } else if (currentGroup) {
-                    currentGroup.dataRows.push(rowData);
-                }
-            });
-
-            if (currentGroup) groupedData.push(currentGroup);
-            return groupedData;
-        });
-
-        await page.close();
-
-        // Update cache
-        jobCache[machine] = extractedData;
-        jobLastFetched[machine] = Date.now();
-
-        res.json({ extractedData });
-    } catch (error) {
-        console.error('Error scraping job data:', error);
-        res.status(500).json({ error: 'Failed to scrape job data' });
+      res.json({ extractedData });
+    } catch (err) {
+      console.error('Error fetching machine status:', err);
+      res.status(500).json({ error: 'Failed to fetch machine status' });
     }
-});
+  });
+
+// SCRAPE 192.168.0.91/jobs
+// app.get('/api/scrape-jobs', async (req, res) => {
+//     const machine = req.query.machine;
+
+//     if (!machine || isNaN(machine) || machine < 71 || machine > 110) {
+//         return res.status(400).json({ error: 'Invalid machine number (71-110).' });
+//     }
+
+//     // check if cache exists and is less than 1 min old
+//     const now = Date.now();
+//     if (jobCache[machine] && now - jobLastFetched[machine] < 1 * 60 * 1000) {
+//         return res.json({ extractedData: jobCache[machine] });
+//     }
+
+//     try {
+//         const browser = await getBrowserInstance(); // reuse the existing browser instance
+//         const page = await browser.newPage();
+
+//         await page.setViewport({ width: 800, height: 600 });
+//         await page.setRequestInterception(true);
+//         page.on('request', (req) => {
+//             if (['image', 'stylesheet', 'font'].includes(req.resourceType())) {
+//                 req.abort();
+//             } else {
+//                 req.continue();
+//             }
+//         });
+
+//         const jobPageUrl = `http://192.168.0.${machine}/jobs`;
+//         await page.goto(jobPageUrl, { waitUntil: 'domcontentloaded', timeout: 40000 });
+//         await page.waitForSelector('tbody tr', { timeout: 15000 });
+
+//         const extractedData = await page.evaluate(() => {
+//             const rows = Array.from(document.querySelectorAll('tbody tr'));
+//             let groupedData = [];
+//             let currentGroup = null;
+
+//             rows.forEach((row) => {
+//                 const cells = Array.from(row.querySelectorAll('td'));
+//                 const rowData = cells.map(td => td.textContent.trim());
+
+//                 const hasPdf = cells.some(td => {
+//                     const strong = td.querySelector('strong');
+//                     return strong && strong.textContent.trim().endsWith('.pdf');
+//                 });
+
+//                 if (hasPdf) {
+//                     if (currentGroup) groupedData.push(currentGroup);
+//                     currentGroup = { pdfFile: rowData[0], dataRows: [] };
+//                 } else if (currentGroup) {
+//                     currentGroup.dataRows.push(rowData);
+//                 }
+//             });
+
+//             if (currentGroup) groupedData.push(currentGroup);
+//             return groupedData;
+//         });
+
+//         await page.close();
+
+//         // Update cache
+//         jobCache[machine] = extractedData;
+//         jobLastFetched[machine] = Date.now();
+
+//         res.json({ extractedData });
+//     } catch (error) {
+//         console.error('Error scraping job data:', error);
+//         res.status(500).json({ error: 'Failed to scrape job data' });
+//     }
+// });
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

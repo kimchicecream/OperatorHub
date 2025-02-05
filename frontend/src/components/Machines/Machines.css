@@ -141,7 +141,7 @@
 .machine-jobs-container .button-labels {
     display: flex;
     justify-content: space-between;
-    padding: 0 15px;
+    padding: 0 10px;
 
     font-size: 13px;
     color: gray;

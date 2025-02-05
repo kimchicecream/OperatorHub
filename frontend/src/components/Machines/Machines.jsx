@@ -8,6 +8,7 @@ function Machines() {
     const [pageCounts, setPageCounts] = useState({});
     const [jobCounts, setJobCounts] = useState({});
     const [noteEnvStatus, setNoteEnvStatus] = useState({});
+    const [machineData, setMachineData] = useState({});
     const [loadingMachine, setLoadingMachine] = useState(false);
     const [loading, setLoading] = useState();
 
@@ -24,86 +25,45 @@ function Machines() {
         };
     }, []);
 
-    async function fetchJobData(machine) {
+    async function fetchMachineData(machine) {
+        setLoadingMachine(machine);
         try {
             const response = await fetch(`http://localhost:5001/api/scrape-jobs?machine=${machine}`);
             const data = await response.json();
 
-            // ensure extractedData exists and is an array before using reduce
-            const extractedData = Array.isArray(data.extractedData) ? data.extractedData : [];
-
-            const totalPages = extractedData.reduce((sum, group) => sum + group.dataRows.length, 0);
-            const totalJobs = extractedData.length;
-            const status = determineNoteEnvStatus(extractedData);
-
-            setJobData(prevData => ({
+            setMachineData(prevData => ({
                 ...prevData,
-                [machine]: extractedData
-            }));
-
-            setPageCounts(prevCounts => ({
-                ...prevCounts,
-                [machine]: totalPages
-            }));
-
-            setJobCounts(prevCounts => ({
-                ...prevCounts,
-                [machine]: totalJobs
-            }));
-
-            setNoteEnvStatus(prevStatus => ({
-                ...prevStatus,
-                [machine]: status
+                [machine]: data.extractedData
             }));
         } catch (error) {
             console.error('Error fetching machine data:', error);
-
-            setJobData(prevData => ({
+            setMachineData(prevData => ({
                 ...prevData,
-                [machine]: []
+                [machine]: null
             }));
-
-            setPageCounts(prevCounts => ({
-                ...prevCounts,
-                [machine]: 0
-            }));
-
-            setJobCounts(prevCounts => ({
-                ...prevCounts,
-                [machine]: 0
-            }));
-
-            setNoteEnvStatus(prevStatus => ({
-                ...prevStatus,
-                [machine]: '--'
-            }));
+        } finally {
+            setLoadingMachine(null);
         }
-    }
-
-    function determineNoteEnvStatus(extractedData) {
-        for (const group of extractedData) {
-            if (group.pdfFile.endsWith('_envelope.pdf')) return 'Envelope';
-            if (group.pdfFile.endsWith('_note.pdf')) return 'Note';
-        }
-        return '--';
     }
 
     useEffect(() => {
+        setLoading(true);
         machines.forEach(machine => {
-            fetchJobData(machine);
+            fetchMachineData(machine);
         });
+        setLoading(false);
 
         const interval = setInterval(() => {
             machines.forEach(machine => {
-                fetchJobData(machine);
+                fetchMachineData(machine);
             });
         }, 30000);
 
         return () => clearInterval(interval);
     }, [machines]);
 
-    const totalJobs = Object.values(jobCounts).reduce((acc, count) => acc + count, 0);
-    const totalOpenMachines = machines.filter(machine => jobCounts[machine] === 0).length;
+    const totalJobs = Object.values(machineData).reduce((acc, data) => acc + (data && data.jobid ? 1 : 0), 0);
+    const totalOpenMachines = machines.filter(machine => !machineData[machine] || machineData[machine].status.includes('IDLE')).length;
 
     return (
         <div className='machine-jobs-container'>
@@ -183,14 +143,22 @@ function Machines() {
                                 >
                                     <div className='status'>
                                         <div className='led-container'>
-                                            <div className={`led ${jobCounts[machine] > 0 ? 'green' : 'blue'}`}></div> {/* will have to adjust for down machines */}
+                                            <div className={`led ${machineData[machine]?.status.includes('IDLE') ? 'blue' : 'green'}`}></div>
                                         </div>
                                         <div className='machine-num'>{machine}</div>
-                                        <div className='machine-type'>N/E</div>
+                                        <div className="machine-type">[N/E]</div>
                                     </div>
-                                    <div className='num-jobs'>{jobCounts[machine] !== undefined ? `${jobCounts[machine]}` : '--'}</div>
-                                    <div className='pages-left'>{pageCounts[machine] !== undefined ? `${pageCounts[machine]}` : '--'}</div>
-                                    <div className='note-env'>{noteEnvStatus[machine]}</div>
+                                    {/* <div className='num-jobs'>{machineData[machine]?.jobid || '--'}</div> */}
+                                    <div className='pages-left'>{machineData[machine]?.copies_left || '--'}</div>
+                                    {/* <div className='note-env'>{machineData[machine]?.pen_life || '--'}</div> */}
+                                    <div className='attributes'>{machineData[machine]?.status[0] || '--'}</div>
+                                    <div className='running-type'>
+                                        {machineData[machine]?.card_or_envelope === 'c'
+                                            ? 'Card'
+                                            : machineData[machine]?.card_or_envelope === 'e'
+                                            ? 'Envelope'
+                                            : 'Unknown'}
+                                    </div>
                                     <div className='attributes'>
                                         {/* <div className='att-jira'>
                                             <p>JIRA</p>
@@ -205,15 +173,13 @@ function Machines() {
                                         {loadingMachine === machine ? (
                                             <div className='loading'>Loading...</div>
                                         ) : (
-                                            jobData[machine]?.length > 0 ? (
-                                                jobData[machine].map((group, index) => (
-                                                    <div key={index} className='job-group'>
-                                                        <h4 className='main-file-title'>{group.pdfFile}</h4>
-                                                        <p className='page-count'>Pages: {group.dataRows.length}</p>
-                                                    </div>
-                                                ))
+                                            machineData[machine] ? (
+                                                <div className='job-group'>
+                                                    <h4 className='main-file-title'>{machineData[machine].filename || 'No file'}</h4>
+                                                    <p className='page-count'>Copies Left: {machineData[machine].copies_left}</p>
+                                                </div>
                                             ) : (
-                                                <p className='no-jobs'>No jobs found.</p>
+                                                <p className='no-jobs'>No data available.</p>
                                             )
                                         )}
                                     </div>
