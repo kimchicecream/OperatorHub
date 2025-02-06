@@ -208,6 +208,11 @@
     box-shadow: 0 0 10px #00aaff, 0 0 20px #00aaff, 0 0 30px #00aaff;
 }
 
+.led.red {
+    background-color: #ff3e3e;
+    box-shadow: 0 0 10px #ff3e3e, 0 0 20px #ff3e3e, 0 0 30px #ff3e3e;
+}
+
 /* ----------------------------------- */
 /* ------   NAV BAR TOOL TIP   ------- */
 /* ----------------------------------- */

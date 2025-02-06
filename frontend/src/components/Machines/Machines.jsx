@@ -4,10 +4,6 @@ import './Machines.css';
 function Machines() {
     const [machines] = useState(Array.from({ length: 110 - 71 + 1 }, (_, i) => i + 71));
     const [selectedMachine, setSelectedMachine] = useState(null);
-    const [jobData, setJobData] = useState([]);
-    const [pageCounts, setPageCounts] = useState({});
-    const [jobCounts, setJobCounts] = useState({});
-    const [noteEnvStatus, setNoteEnvStatus] = useState({});
     const [machineData, setMachineData] = useState({});
     const [loadingMachine, setLoadingMachine] = useState(false);
     const [loading, setLoading] = useState();
@@ -17,6 +13,7 @@ function Machines() {
     // const machinesColumn3 = Array.from({ length: (109 - 91) / 2 + 1 }, (_, i) => 91 + i * 2); // odd: 91-109
     // const machinesColumn4 = Array.from({ length: (110 - 92) / 2 + 1 }, (_, i) => 92 + i * 2); // even: 92-110
 
+    // no scroll
     useEffect(() => {
         document.body.style.overflow = "hidden";
 
@@ -29,6 +26,10 @@ function Machines() {
         setLoadingMachine(machine);
         try {
             const response = await fetch(`http://localhost:5001/api/scrape-jobs?machine=${machine}`);
+            // If the response is not OK, throw an error so we handle it below.
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const data = await response.json();
 
             setMachineData(prevData => ({
@@ -143,12 +144,20 @@ function Machines() {
                                 >
                                     <div className='status'>
                                         <div className='led-container'>
-                                            <div className={`led ${machineData[machine]?.status.includes('IDLE') ? 'blue' : 'green'}`}></div>
+                                        <div className={`led ${
+                                            !machineData[machine]
+                                                ? 'gray'  // inactive
+                                                : /PAPER_JAM|paperJam|INCORRECT_CARD/.test(machineData[machine].status)
+                                                ? 'red'   // errors
+                                                : machineData[machine].status.includes('IDLE') || machineData[machine].status.includes === 'idle' || machineData[machine].status === '--' || !machineData[machine].status
+                                                ? 'blue'  // idle
+                                                : 'green' // running
+                                            }`}></div>
                                         </div>
                                         <div className='machine-num'>{machine}</div>
                                         <div className="machine-type">[N/E]</div>
                                     </div>
-                                    {/* <div className='num-jobs'>{machineData[machine]?.jobid || '--'}</div> */}
+                                    <div className='num-jobs'>{machineData[machine]?.jobid || '--'}</div>
                                     <div className='pages-left'>{machineData[machine]?.copies_left || '--'}</div>
                                     {/* <div className='note-env'>{machineData[machine]?.pen_life || '--'}</div> */}
                                     <div className='attributes'>{machineData[machine]?.status[0] || '--'}</div>

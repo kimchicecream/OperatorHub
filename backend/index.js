@@ -6,6 +6,7 @@ const cors = require('cors');
 const axios = require('axios');
 const http = require('http');
 const net = require('net');
+const fetch = require('node-fetch');
 // const fetch = require('node-fetch');
 
 const app = express();
@@ -32,6 +33,7 @@ app.use(cors({
 app.options('*', (req, res) => {
     const origin = allowedOrigins.includes(req.headers.origin) ? req.headers.origin : false;
     if (origin) {
+        // res.header('Access-Control-Allow-Origin', "*");
         res.header('Access-Control-Allow-Origin', origin);
         res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
         res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -104,7 +106,7 @@ app.get('/api/scrape-performance', async (req, res) => {
 let jobCache = {};
 let jobLastFetched = {};
 
-// Define the keys to extract
+// define the keys to extract
 const keysToExtract = [
     'card_id',
     'card_or_envelope',
@@ -116,54 +118,56 @@ const keysToExtract = [
     'status'
 ];
 
-// fetch machine status from 192.168.0.<machine>/machine_status
 const agent = new http.Agent({
     createConnection: (options, callback) => {
-      options.localAddress = '192.168.2.118';
-      return net.createConnection(options, callback);
+        options.localAddress = '192.168.0.21';
+        return net.createConnection(options, callback);
     }
-  });
+});
 
+/* -------------------------------- */
+/* -------- FETCH MACHINES -------- */
+/* -------------------------------- */
 app.get('/api/scrape-jobs', async (req, res) => {
     const machine = req.query.machine;
 
     if (!machine || isNaN(machine) || machine < 71 || machine > 110) {
-      return res
-        .status(400)
-        .json({ error: 'Invalid machine number (71-110).' });
+        return res.status(400).json({ error: 'Invalid machine number (71-110).' });
     }
 
     const now = Date.now();
     if (jobCache[machine] && now - jobLastFetched[machine] < 1 * 60 * 1000) {
-      return res.json({ extractedData: jobCache[machine] });
+        return res.json({ extractedData: jobCache[machine] });
     }
 
     const machineStatusUrl = `http://192.168.0.${machine}/machine_status`;
 
     try {
-      const response = await axios.get(machineStatusUrl, {
-        httpAgent: agent // Use the custom HTTP agent here
-        // Optionally, add a timeout if needed:
-        // timeout: 5000,
-      });
-      const jsonData = response.data;
+        const response = await axios.get(machineStatusUrl);
+        const jsonData = response.data;
 
-      const extractedData = {};
-      keysToExtract.forEach(key => {
-        if (jsonData.hasOwnProperty(key)) {
-          extractedData[key] = jsonData[key];
-        }
-      });
+        const extractedData = {};
+        keysToExtract.forEach(key => {
+            if (jsonData.hasOwnProperty(key)) {
+                extractedData[key] = jsonData[key];
+            }
+        });
 
-      jobCache[machine] = extractedData;
-      jobLastFetched[machine] = Date.now();
+        jobCache[machine] = extractedData;
+        jobLastFetched[machine] = Date.now();
 
-      res.json({ extractedData });
+        res.json({ extractedData });
     } catch (err) {
-      console.error('Error fetching machine status:', err);
-      res.status(500).json({ error: 'Failed to fetch machine status' });
+        console.error(`Error fetching machine status from ${machineStatusUrl}`);
+        console.error('Detailed Error:', err);
+
+        if (err.code === 'EHOSTUNREACH') {
+            res.status(500).json({ error: `Machine ${machine} is unreachable. Check network.` });
+        } else {
+            res.status(500).json({ error: 'Failed to fetch machine status' });
+        }
     }
-  });
+});
 
 // SCRAPE 192.168.0.91/jobs
 // app.get('/api/scrape-jobs', async (req, res) => {
@@ -236,10 +240,6 @@ app.get('/api/scrape-jobs', async (req, res) => {
 //     }
 // });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-
 // close gracefully
 process.on('exit', async () => {
     if (browser) {
@@ -261,4 +261,8 @@ process.on('uncaughtException', (err) => {
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
