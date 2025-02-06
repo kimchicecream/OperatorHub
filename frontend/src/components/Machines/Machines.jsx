@@ -149,7 +149,7 @@ function Machines() {
                                                 ? 'gray'  // inactive
                                                 : /PAPER_JAM|paperJam|INCORRECT_CARD/.test(machineData[machine].status)
                                                 ? 'red'   // errors
-                                                : machineData[machine].status.includes('IDLE') || machineData[machine].status.includes === 'idle' || machineData[machine].status === '--' || !machineData[machine].status
+                                                : machineData[machine].status.includes('IDLE') || machineData[machine].status.includes('idle') || machineData[machine].status === '--' || !machineData[machine].status
                                                 ? 'blue'  // idle
                                                 : 'green' // running
                                             }`}></div>

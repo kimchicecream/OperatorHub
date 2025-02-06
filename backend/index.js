@@ -118,12 +118,13 @@ const keysToExtract = [
     'status'
 ];
 
-const agent = new http.Agent({
-    createConnection: (options, callback) => {
-        options.localAddress = '192.168.0.21';
-        return net.createConnection(options, callback);
-    }
-});
+// const agent = new http.Agent({
+//     keepAlive: false,
+//     createConnection: (options, callback) => {
+//         options.localAddress = '192.168.2.118';
+//         return net.createConnection(options, callback);
+//     }
+// });
 
 /* -------------------------------- */
 /* -------- FETCH MACHINES -------- */
@@ -141,6 +142,7 @@ app.get('/api/scrape-jobs', async (req, res) => {
     }
 
     const machineStatusUrl = `http://192.168.0.${machine}/machine_status`;
+    // const machineStatusUrl = `http://192.168.0.72/machine_status`;
 
     try {
         const response = await axios.get(machineStatusUrl);
