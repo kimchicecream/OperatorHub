@@ -136,27 +136,18 @@ app.get('/api/scrape-jobs', async (req, res) => {
         return res.status(400).json({ error: 'Invalid machine number (71-110).' });
     }
 
-    const now = Date.now();
-    if (jobCache[machine] && now - jobLastFetched[machine] < 1 * 60 * 1000) {
-        return res.json({ extractedData: jobCache[machine] });
-    }
-
     const machineStatusUrl = `http://192.168.0.${machine}/machine_status`;
-    // const machineStatusUrl = `http://192.168.0.72/machine_status`;
 
     try {
-        const response = await axios.get(machineStatusUrl);
-        const jsonData = response.data;
-
-        const extractedData = {};
-        keysToExtract.forEach(key => {
-            if (jsonData.hasOwnProperty(key)) {
-                extractedData[key] = jsonData[key];
-            }
+        const response = await axios.get(machineStatusUrl, {
+            timeout: 5000
         });
 
-        jobCache[machine] = extractedData;
-        jobLastFetched[machine] = Date.now();
+        const jsonData = response.data;
+        const extractedData = keysToExtract.reduce((acc, key) => {
+            if (jsonData.hasOwnProperty(key)) acc[key] = jsonData[key];
+            return acc;
+        }, {});
 
         res.json({ extractedData });
     } catch (err) {
@@ -170,6 +161,7 @@ app.get('/api/scrape-jobs', async (req, res) => {
         }
     }
 });
+
 
 // SCRAPE 192.168.0.91/jobs
 // app.get('/api/scrape-jobs', async (req, res) => {

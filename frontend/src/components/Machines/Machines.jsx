@@ -63,8 +63,18 @@ function Machines() {
         return () => clearInterval(interval);
     }, [machines]);
 
-    const totalJobs = Object.values(machineData).reduce((acc, data) => acc + (data && data.jobid ? 1 : 0), 0);
-    const totalOpenMachines = machines.filter(machine => !machineData[machine] || machineData[machine].status.includes('IDLE')).length;
+    // const totalJobs = Object.values(machineData).reduce((acc, data) => acc + (data && data.jobid ? 1 : 0), 0);
+    const totalOpenMachines = machines.filter(machine =>
+        machineData[machine] &&
+        machineData[machine].status &&
+        (machineData[machine].status.includes('IDLE') || machineData[machine].status.includes('idle'))
+    ).length;
+
+
+    const totalPausedMachines = machines.filter(machine =>
+        machineData[machine] &&
+        /PAPER_JAM|paperJam|INCORRECT_CARD/.test(machineData[machine].status)
+    ).length;
 
     return (
         <div className='machine-jobs-container'>
@@ -92,13 +102,13 @@ function Machines() {
                             {loading ? (
                                 <div className='rectangle-loader'></div>
                             ) : (
-                                <div className='total-jobs'>{totalJobs}</div>
+                                <div className='total-paused'>{totalPausedMachines}</div>
                             )}
                         </div>
                         <div className='info'>
-                            <p>Total jobs running</p>
+                            <p>Paused machines</p>
                             <i className="fa-solid fa-circle-info"></i>
-                            <div className='tooltip'>The total number of jobs currently running.</div>
+                            <div className='tooltip'>The total number machines that are paused for various reasons. Manual check up is required.</div>
                         </div>
                     </div>
                     <div className='big box' id='b3'>
@@ -147,7 +157,7 @@ function Machines() {
                                         <div className={`led ${
                                             !machineData[machine]
                                                 ? 'gray'  // inactive
-                                                : /PAPER_JAM|paperJam|INCORRECT_CARD/.test(machineData[machine].status)
+                                                : /PAPER_JAM|paperJam|INCORRECT_CARD|REPLACE_PEN/.test(machineData[machine].status)
                                                 ? 'red'   // errors
                                                 : machineData[machine].status.includes('IDLE') || machineData[machine].status.includes('idle') || machineData[machine].status === '--' || !machineData[machine].status
                                                 ? 'blue'  // idle
@@ -157,7 +167,7 @@ function Machines() {
                                         <div className='machine-num'>{machine}</div>
                                         <div className="machine-type">[N/E]</div>
                                     </div>
-                                    <div className='num-jobs'>{machineData[machine]?.jobid || '--'}</div>
+                                    {/* <div className='num-jobs'>{machineData[machine]?.jobid || '--'}</div> */}
                                     <div className='pages-left'>{machineData[machine]?.copies_left || '--'}</div>
                                     {/* <div className='note-env'>{machineData[machine]?.pen_life || '--'}</div> */}
                                     <div className='attributes'>{machineData[machine]?.status[0] || '--'}</div>
