@@ -152,6 +152,14 @@
     gap: 10px;
 }
 
+.total-paused.yellow {
+    color: yellow;
+}
+
+.total-paused.red {
+    color: rgb(214, 22, 22);
+}
+
 /* ----------------------------------- */
 /* ------    BUTTON COLUMNS    ------- */
 /* ----------------------------------- */

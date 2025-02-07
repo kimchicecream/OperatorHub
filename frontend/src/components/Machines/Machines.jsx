@@ -102,7 +102,9 @@ function Machines() {
                             {loading ? (
                                 <div className='rectangle-loader'></div>
                             ) : (
-                                <div className='total-paused'>{totalPausedMachines}</div>
+                                <div className={`total-paused ${totalPausedMachines > 10 ? 'red' : totalPausedMachines > 5 ? 'yellow' : ''}`}>
+                                    {totalPausedMachines}
+                                </div>
                             )}
                         </div>
                         <div className='info'>
